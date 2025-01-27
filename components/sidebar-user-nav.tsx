@@ -1,9 +1,10 @@
 'use client';
+
 import { ChevronUp } from 'lucide-react';
-import Image from 'next/image';
-import type { User } from 'next-auth';
-import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { User } from '@supabase/supabase-js';
 
 import {
   DropdownMenu,
@@ -18,8 +19,17 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-export function SidebarUserNav({ user }: { user: User }) {
+export function SidebarUserNav({ user }: { user: User | undefined }) {
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+  };
+
+  if (!user) return null;
 
   return (
     <SidebarMenu>
@@ -27,13 +37,9 @@ export function SidebarUserNav({ user }: { user: User }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent bg-background data-[state=open]:text-sidebar-accent-foreground h-10">
-              <Image
-                src={`https://avatar.vercel.sh/${user.email}`}
-                alt={user.email ?? 'User Avatar'}
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
+              <div className="flex size-6 items-center justify-center rounded-full border bg-muted">
+                {user.email?.[0]?.toUpperCase() ?? 'A'}
+              </div>
               <span className="truncate">{user?.email}</span>
               <ChevronUp className="ml-auto" />
             </SidebarMenuButton>
@@ -49,18 +55,11 @@ export function SidebarUserNav({ user }: { user: User }) {
               {`Toggle ${theme === 'light' ? 'dark' : 'light'} mode`}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <button
-                type="button"
-                className="w-full cursor-pointer"
-                onClick={() => {
-                  signOut({
-                    redirectTo: '/',
-                  });
-                }}
-              >
-                Sign out
-              </button>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={handleSignOut}
+            >
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
